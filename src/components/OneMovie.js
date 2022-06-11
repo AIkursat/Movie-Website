@@ -2,17 +2,37 @@ import React, { Component, Fragment } from 'react'
 
 export default class OneMovie extends Component {
 
-    state = { movie: {} };
+    state = { movie: {}, ilLoaded : false, error:null };
 
     componentDidMount() {
-        this.setState({movie: {
-            id: this.props.match.params.id,
-            title: "Some movie",
-            runtime: 150,
-        }})
+        fetch("http://localhost:4000/v1/movie" + this.props.match.params.id) // It will get one movie
+            // .then((response) => response.json())
+            .then((response) => {
+                console.log("status code is", response.status);
+                if (response.status !== "200") {
+                    let err = Error;
+                    err.message = "invalid response code " + response.status
+                    this.setState({ error: err });
+                }
+                return response.json();
+            })
+            .then((json) => {
+                this.setState({
+                    movie: json.movie,
+                    isLoaded: true,
+                },
+                    (error) => {
+                        this.setState({
+                            isLoaded: true,
+                            error
+                        });
+                    }
+                );
+            });
     }
 
     render() {
+        
         return (
             <Fragment>
                 <h2>Movie: {this.state.movie.title} {this.state.movie.id}</h2>
@@ -30,7 +50,7 @@ export default class OneMovie extends Component {
                         </tr>
                     </tbody>
                 </table>
-            </Fragment>
+            </Fragment >
         );
     }
 }

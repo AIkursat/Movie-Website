@@ -1,12 +1,12 @@
 import React, { Component, Fragment } from "react";
+import { Link } from "react-router-dom";
 import "./EditMovie.css";
 import Input from "./form-components/Input";
-import TextArea from "./form-components/TextArea";
 import Select from "./form-components/Select";
+import TextArea from "./form-components/TextArea";
 import Alert from "./ui-components/Alert";
-import { Link } from "react-router-dom";
-import { confirmAlert } from 'react-confirm-alert'; 
-import 'react-confirm-alert/src/react-confirm-alert.css'; 
+import { confirmAlert } from "react-confirm-alert";
+import "react-confirm-alert/src/react-confirm-alert.css";
 
 export default class EditMovie extends Component {
   constructor(props) {
@@ -36,63 +36,8 @@ export default class EditMovie extends Component {
         message: "",
       },
     };
-
     this.handleChange = this.handleChange.bind(this);
     this.handleSubmit = this.handleSubmit.bind(this);
-  }
-
-  handleSubmit = (evt) => {
-    evt.preventDefault();
-
-    // client side validation
-    let errors = [];
-    if (this.state.movie.title === "") {
-      errors.push("title");
-    }
-
-    this.setState({ errors: errors });
-
-    if (errors.length > 0) {
-      return false;
-    }
-
-    const data = new FormData(evt.target);
-    const payload = Object.fromEntries(data.entries());
-    console.log(payload);
-
-    const requestOptions = {
-      method: "POST",
-      body: JSON.stringify(payload),
-    };
-
-    fetch("http://localhost:4000/v1/admin/editmovie", requestOptions)
-      .then((response) => response.json())
-      .then((data) => {
-        if (data.error) {
-          this.setState({
-            alert: { type: "alert-danger", message: data.error.message },
-          });
-        } else {
-          this.setState({
-            alert: { type: "alert-success", message: "Changes saved!" },
-          });
-        }
-      });
-  };
-
-  handleChange = (evt) => {
-    let value = evt.target.value;
-    let name = evt.target.name;
-    this.setState((prevState) => ({
-      movie: {
-        ...prevState.movie,
-        [name]: value,
-      },
-    }));
-  };
-
-  hasError(key) {
-    return this.state.errors.indexOf(key) !== -1;
   }
 
   componentDidMount() {
@@ -102,7 +47,7 @@ export default class EditMovie extends Component {
         .then((response) => {
           if (response.status !== "200") {
             let err = Error;
-            err.Message = "Invalid response code: " + response.status;
+            err.message = "Invalid response code: " + response.status;
             this.setState({ error: err });
           }
           return response.json();
@@ -136,28 +81,107 @@ export default class EditMovie extends Component {
     }
   }
 
+  handleSubmit = (evt) => {
+    evt.preventDefault();
+    // do validation
+    let errors = [];
+    if (this.state.movie.title === "") {
+      errors.push("title");
+    }
+
+    this.setState({ errors: errors });
+
+    if (errors.length > 0) {
+      return false;
+    }
+
+    // we passed, so post info
+    const data = new FormData(evt.target);
+    const payload = Object.fromEntries(data.entries());
+
+    const requestOptions = {
+      method: "POST",
+      // headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    };
+    fetch("http://localhost:4000/v1/admin/editmovie", requestOptions)
+      .then((response) => response.json())
+      .then((data) => {
+        if (data.error) {
+          alert(data.error.message);
+          this.setState({
+            alert: { type: "alert-danger", message: data.error.message },
+          });
+        } else {
+          this.props.history.push({
+            pathname: "/admin",
+          });
+        }
+      });
+  };
+
+  handleChange = (evt) => {
+    let value = evt.target.value;
+    let name = evt.target.name;
+    this.setState((prevState) => ({
+      movie: {
+        ...prevState.movie,
+        [name]: value,
+      },
+    }));
+  };
+
+  // *** add this
+  hasError(key) {
+    return this.state.errors.indexOf(key) !== -1;
+  }
+
   confirmDelete = (e) => {
-    console.log("would delete movie id", this.state.movie.id);
+    console.log("would delete id", this.state.movie.id);
 
     confirmAlert({
-      title: 'Delete Movie?',
-      message: 'Are you sure?',
+      title: "Delete Movie?",
+      message: "Are you sure?",
       buttons: [
         {
-          label: 'Yes',
-          onClick: () => alert('Click Yes')
+          label: "Yes",
+          onClick: () => {
+            // delete the movie
+            fetch(
+              "http://localhost:4000/v1/admin/deletemovie/" +
+                this.state.movie.id,
+              { method: "GET" }
+            )
+              .then((response) => response.json)
+              .then((data) => {
+                if (data.error) {
+                  this.setState({
+                    alert: {
+                      type: "alert-danger",
+                      message: data.error.message,
+                    },
+                  });
+                } else {
+                  this.setState({
+                    alert: { type: "alert-success", message: "Movie deleted!" },
+                  });
+                  this.props.history.push({
+                    pathname: "/admin",
+                  });
+                }
+              });
+          },
         },
         {
-          label: 'No',
-          onClick: () => {}
-        }
-      ]
+          label: "No",
+          onClick: () => {},
+        },
+      ],
     });
-  }
+  };
 
   render() {
     let { movie, isLoaded, error } = this.state;
-
     if (error) {
       return <div>Error: {error.message}</div>;
     } else if (!isLoaded) {
@@ -213,7 +237,7 @@ export default class EditMovie extends Component {
               options={this.state.mpaaOptions}
               value={movie.mpaa_rating}
               handleChange={this.handleChange}
-              placeholder={"Choose..."}
+              placeholder="Choose..."
             />
 
             <Input
@@ -239,8 +263,11 @@ export default class EditMovie extends Component {
               Cancel
             </Link>
             {movie.id > 0 && (
-              <a href="#!" onClick={() => this.confirmDelete()}
-              className="btn btn-danger ms-1">
+              <a
+                href="#!"
+                onClick={() => this.confirmDelete()}
+                className="btn btn-danger ms-1"
+              >
                 Delete
               </a>
             )}

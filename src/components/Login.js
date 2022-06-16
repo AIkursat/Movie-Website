@@ -69,10 +69,19 @@ export default class Login extends Component {
                 })
             } else {
                 console.log(data);
+                this.handleJWTChange(data);
             }
         })
 
   };
+   
+  handleJWTChange(jwt){
+    this.props.handleJWTChange(Object.values(data)[0]);
+    this.props.history.push({
+      pathname: "/admin"
+    })
+  }
+
 
   hasError(key) {
     return this.state.errors.indexOf(key) !== -1;
